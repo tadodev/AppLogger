@@ -1,26 +1,54 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<!--
+  AppLoggerT MSBuild Targets
+  Automatically detects and references ETABS API DLL
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-	<!-- Detect ETABS installation -->
+	<!-- ========================================
+         ETABS Installation Detection
+         Checks multiple versions and locations
+         ======================================== -->
 	<PropertyGroup>
-		<EtabsInstallDir
-		  Condition="Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll')">
-			C:\Program Files\Computers and Structures\ETABS 22
-		</EtabsInstallDir>
+		<!-- Check ETABS 22 -->
+		<EtabsInstallDir Condition="'$(EtabsInstallDir)' == '' AND Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll')">C:\Program Files\Computers and Structures\ETABS 22</EtabsInstallDir>
+
+		<!-- Check ETABS 21 -->
+		<EtabsInstallDir Condition="'$(EtabsInstallDir)' == '' AND Exists('C:\Program Files\Computers and Structures\ETABS 21\ETABSv1.dll')">C:\Program Files\Computers and Structures\ETABS 21</EtabsInstallDir>
+
+		<!-- Check ETABS 20 -->
+		<EtabsInstallDir Condition="'$(EtabsInstallDir)' == '' AND Exists('C:\Program Files\Computers and Structures\ETABS 20\ETABSv1.dll')">C:\Program Files\Computers and Structures\ETABS 20</EtabsInstallDir>
+
+		<!-- Check x86 Program Files (for 32-bit installations) -->
+		<EtabsInstallDir Condition="'$(EtabsInstallDir)' == '' AND Exists('C:\Program Files (x86)\Computers and Structures\ETABS 22\ETABSv1.dll')">C:\Program Files (x86)\Computers and Structures\ETABS 22</EtabsInstallDir>
+
+		<!-- Allow user override via environment variable or project property -->
+		<EtabsInstallDir Condition="'$(EtabsInstallDir)' == '' AND '$(ETABS_INSTALL_DIR)' != ''">$(ETABS_INSTALL_DIR)</EtabsInstallDir>
 	</PropertyGroup>
 
-	<!-- Automatically add reference if ETABS exists -->
+	<!-- ========================================
+         Add ETABS Reference (if found)
+         ======================================== -->
 	<ItemGroup Condition="'$(EtabsInstallDir)' != ''">
 		<Reference Include="ETABSv1">
 			<HintPath>$(EtabsInstallDir)\ETABSv1.dll</HintPath>
 			<Private>false</Private>
+			<EmbedInteropTypes>false</EmbedInteropTypes>
 		</Reference>
 	</ItemGroup>
 
-	<!-- Friendly warning if ETABS not found -->
+	<!-- ========================================
+         Build Diagnostics
+         ======================================== -->
+	<Target Name="AppLoggerT_DiagnosticInfo"
+			BeforeTargets="CoreCompile"
+			Condition="'$(EtabsInstallDir)' != ''">
+		<Message Text="[AppLoggerT] ETABS detected at: $(EtabsInstallDir)" Importance="normal" />
+	</Target>
+
 	<Target Name="AppLoggerT_WarnIfEtabsMissing"
-			BeforeTargets="Build"
+			BeforeTargets="CoreCompile"
 			Condition="'$(EtabsInstallDir)' == ''">
-		<Warning Text="ETABS not found. ETABSv1.dll was not referenced automatically." />
+		<Warning Text="[AppLoggerT] ETABS installation not detected. ETABSv1.dll was not referenced automatically. ETABS-specific features will not be available. To manually specify ETABS location, set the ETABS_INSTALL_DIR environment variable or MSBuild property." />
 	</Target>
 
 </Project>

@@ -1,44 +1,81 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<!--
+  AppLoggerT - Logging Library with ETABS Integration
+-->
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<!-- =========================
        Package & Build Settings
        ========================= -->
 	<PropertyGroup>
-		<!-- Library should multi-target for stability -->
+		<!-- Multi-target for better compatibility -->
 		<TargetFrameworks>net10.0</TargetFrameworks>
 
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
 
-		<!-- NuGet metadata -->
+		<!-- NuGet Package Metadata -->
 		<PackageId>AppLoggerT</PackageId>
-		<Version>1.0.1</Version>
-		<Authors>Team</Authors>
+		<Version>1.0.2</Version>
+		<Authors>Your Team Name</Authors>
+		<Company>Your Company Name</Company>
 		<Product>AppLoggerT</Product>
-		<Description>
-			AppLoggerT is a logging library for .NET applications with
-			dependency injection support and ETABS integration helpers.
-		</Description>
+		<Description>A flexible logging library for .NET applications with dependency injection support and optional ETABS API integration. Automatically detects and references ETABS installation when available.</Description>
+		<PackageTags>logging;etabs;structural-engineering;dependency-injection;csi</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/yourusername/AppLoggerT</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageProjectUrl>https://github.com/yourusername/AppLoggerT</PackageProjectUrl>
 
-		<!-- NuGet behavior -->
+		<!-- Build Configuration -->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<IncludeBuildOutput>true</IncludeBuildOutput>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+		<!-- Symbol Package -->
 	</PropertyGroup>
+
+	<!-- =========================
+       Package Content
+       ========================= -->
+	<ItemGroup>
+		<!-- Include the .targets file that handles ETABS auto-reference -->
+		<None Include="build\AppLoggerT.targets" Pack="true" PackagePath="build\AppLoggerT.targets" />
+		<None Include="build\AppLoggerT.targets" Pack="true" PackagePath="buildTransitive\AppLoggerT.targets" />
+
+		<!-- Include README for NuGet -->
+	</ItemGroup>
 
 	<!-- =========================
        Managed Dependencies
        ========================= -->
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
 	</ItemGroup>
 
 	<!-- =========================
-       MSBuild Auto-Reference Logic
+       Development-only References
        ========================= -->
-	<ItemGroup>
-		<!-- This file auto-adds ETABSv1 reference if ETABS is installed -->
-		<None Include="build\AppLoggerT.targets" Pack="true" PackagePath="build\AppLoggerT.targets" />
+	<ItemGroup Condition="Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll')">
+		<!-- This reference is ONLY for development/compilation -->
+		<!-- It will NOT be included in the NuGet package -->
+		<Reference Include="ETABSv1">
+			<HintPath>C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
 	</ItemGroup>
+
+	<!-- =========================
+       Build Warnings
+       ========================= -->
+	<Target Name="WarnIfEtabsMissingDuringDevelopment"
+			BeforeTargets="CoreCompile"
+			Condition="!Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll') AND 
+			           !Exists('C:\Program Files\Computers and Structures\ETABS 21\ETABSv1.dll') AND
+			           !Exists('C:\Program Files\Computers and Structures\ETABS 20\ETABSv1.dll')">
+		<Warning Text="ETABS installation not found. EtabsConnect class will have compilation errors. Install ETABS or comment out ETABS-specific code to build." />
+	</Target>
 
 </Project>

@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- =========================
+       Package & Build Settings
+       ========================= -->
+	<PropertyGroup>
+		<!-- Library should multi-target for stability -->
+		<TargetFrameworks>net10.0</TargetFrameworks>
+
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- NuGet metadata -->
+		<PackageId>AppLoggerT</PackageId>
+		<Version>1.0.1</Version>
+		<Authors>Team</Authors>
+		<Product>AppLoggerT</Product>
+		<Description>
+			AppLoggerT is a logging library for .NET applications with
+			dependency injection support and ETABS integration helpers.
+		</Description>
+
+		<!-- NuGet behavior -->
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<IncludeBuildOutput>true</IncludeBuildOutput>
+	</PropertyGroup>
+
+	<!-- =========================
+       Managed Dependencies
+       ========================= -->
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+	</ItemGroup>
+
+	<!-- =========================
+       MSBuild Auto-Reference Logic
+       ========================= -->
+	<ItemGroup>
+		<!-- This file auto-adds ETABSv1 reference if ETABS is installed -->
+		<None Include="build\AppLoggerT.targets" Pack="true" PackagePath="build\AppLoggerT.targets" />
+	</ItemGroup>
+
+</Project>

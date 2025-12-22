@@ -1,0 +1,26 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<!-- Detect ETABS installation -->
+	<PropertyGroup>
+		<EtabsInstallDir
+		  Condition="Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll')">
+			C:\Program Files\Computers and Structures\ETABS 22
+		</EtabsInstallDir>
+	</PropertyGroup>
+
+	<!-- Automatically add reference if ETABS exists -->
+	<ItemGroup Condition="'$(EtabsInstallDir)' != ''">
+		<Reference Include="ETABSv1">
+			<HintPath>$(EtabsInstallDir)\ETABSv1.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<!-- Friendly warning if ETABS not found -->
+	<Target Name="AppLoggerT_WarnIfEtabsMissing"
+			BeforeTargets="Build"
+			Condition="'$(EtabsInstallDir)' == ''">
+		<Warning Text="ETABS not found. ETABSv1.dll was not referenced automatically." />
+	</Target>
+
+</Project>

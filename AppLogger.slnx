@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AppLogger/AppLogger.csproj" />
+  <Project Path="PackageTest/PackageTest.csproj" />
+</Solution>

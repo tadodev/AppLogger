@@ -31,10 +31,31 @@
 	<ItemGroup Condition="'$(EtabsInstallDir)' != ''">
 		<Reference Include="ETABSv1">
 			<HintPath>$(EtabsInstallDir)\ETABSv1.dll</HintPath>
-			<Private>false</Private>
+			<!-- 
+			CRITICAL: For COM Interop assemblies, we need to:
+			1. Set Private=true to copy the assembly to output
+			2. Keep EmbedInteropTypes=false to avoid type embedding issues
+			-->
+			<Private>true</Private>
 			<EmbedInteropTypes>false</EmbedInteropTypes>
 		</Reference>
 	</ItemGroup>
+
+	<!-- ========================================
+         Copy ETABS DLL to Output Directory
+         This ensures the DLL is available at runtime
+         ======================================== -->
+	<Target Name="CopyEtabsDllToOutput"
+	        AfterTargets="ResolveReferences"
+	        Condition="'$(EtabsInstallDir)' != ''">
+		<ItemGroup>
+			<EtabsFilesToCopy Include="$(EtabsInstallDir)\ETABSv1.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(EtabsFilesToCopy)"
+		      DestinationFolder="$(OutputPath)"
+		      SkipUnchangedFiles="true" />
+		<Message Text="[AppLoggerT] Copied ETABSv1.dll to output directory" Importance="normal" />
+	</Target>
 
 	<!-- ========================================
          Build Diagnostics

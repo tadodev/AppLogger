@@ -7,7 +7,7 @@
        Package & Build Settings
        ========================= -->
 	<PropertyGroup>
-		<!-- Multi-target for better compatibility -->
+		<!-- Target .NET 10 only -->
 		<TargetFrameworks>net10.0</TargetFrameworks>
 
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -73,9 +73,8 @@
 	<Target Name="WarnIfEtabsMissingDuringDevelopment"
 			BeforeTargets="CoreCompile"
 			Condition="!Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll') AND 
-			           !Exists('C:\Program Files\Computers and Structures\ETABS 21\ETABSv1.dll') AND
-			           !Exists('C:\Program Files\Computers and Structures\ETABS 20\ETABSv1.dll')">
-		<Warning Text="ETABS installation not found. EtabsConnect class will have compilation errors. Install ETABS or comment out ETABS-specific code to build." />
+			           !Exists('C:\Program Files (x86)\Computers and Structures\ETABS 22\ETABSv1.dll')">
+		<Warning Text="ETABS 22 installation not found. EtabsConnect class will have compilation errors. Install ETABS 22 or comment out ETABS-specific code to build." />
 	</Target>
 
 </Project>

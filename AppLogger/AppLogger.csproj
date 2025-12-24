@@ -16,7 +16,7 @@
 
 		<!-- NuGet Package Metadata -->
 		<PackageId>AppLoggerT</PackageId>
-		<Version>1.0.2</Version>
+		<Version>1.0.3</Version>
 		<Authors>Your Team Name</Authors>
 		<Company>Your Company Name</Company>
 		<Product>AppLoggerT</Product>
@@ -31,8 +31,6 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<IncludeBuildOutput>true</IncludeBuildOutput>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-
-		<!-- Symbol Package -->
 	</PropertyGroup>
 
 	<!-- =========================
@@ -42,8 +40,6 @@
 		<!-- Include the .targets file that handles ETABS auto-reference -->
 		<None Include="build\AppLoggerT.targets" Pack="true" PackagePath="build\AppLoggerT.targets" />
 		<None Include="build\AppLoggerT.targets" Pack="true" PackagePath="buildTransitive\AppLoggerT.targets" />
-
-		<!-- Include README for NuGet -->
 	</ItemGroup>
 
 	<!-- =========================
@@ -57,23 +53,40 @@
 
 	<!-- =========================
        Development-only References
+       IMPORTANT: This is ONLY for building the library itself
+       Package consumers will get references from AppLoggerT.targets
        ========================= -->
-	<ItemGroup Condition="Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll')">
-		<!-- This reference is ONLY for development/compilation -->
-		<!-- It will NOT be included in the NuGet package -->
+	<PropertyGroup>
+		<!-- Detect ETABS installation -->
+		<EtabsDevPath Condition="Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll')">C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll</EtabsDevPath>
+		<EtabsDevPath Condition="'$(EtabsDevPath)' == '' AND Exists('C:\Program Files (x86)\Computers and Structures\ETABS 22\ETABSv1.dll')">C:\Program Files (x86)\Computers and Structures\ETABS 22\ETABSv1.dll</EtabsDevPath>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(EtabsDevPath)' != ''">
 		<Reference Include="ETABSv1">
-			<HintPath>C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll</HintPath>
+			<HintPath>$(EtabsDevPath)</HintPath>
+			<!-- 
+			Private=false because:
+			1. This is a CLASS LIBRARY - it doesn't need ETABSv1.dll in its output
+			2. The library itself doesn't ship with ETABSv1.dll
+			3. The consuming application (PackageTest) will handle copying via .targets
+			-->
 			<Private>false</Private>
+			<EmbedInteropTypes>false</EmbedInteropTypes>
 		</Reference>
 	</ItemGroup>
+
+	<Target Name="ShowEtabsPath" BeforeTargets="CoreCompile">
+		<Message Text="[AppLogger.csproj] ETABS dev path: $(EtabsDevPath)" Importance="high" Condition="'$(EtabsDevPath)' != ''" />
+		<Warning Text="[AppLogger.csproj] ETABS not found - build will fail if EtabsConnect code is present" Condition="'$(EtabsDevPath)' == ''" />
+	</Target>
 
 	<!-- =========================
        Build Warnings
        ========================= -->
 	<Target Name="WarnIfEtabsMissingDuringDevelopment"
 			BeforeTargets="CoreCompile"
-			Condition="!Exists('C:\Program Files\Computers and Structures\ETABS 22\ETABSv1.dll') AND 
-			           !Exists('C:\Program Files (x86)\Computers and Structures\ETABS 22\ETABSv1.dll')">
+			Condition="'$(EtabsDevPath)' == ''">
 		<Warning Text="ETABS 22 installation not found. EtabsConnect class will have compilation errors. Install ETABS 22 or comment out ETABS-specific code to build." />
 	</Target>
 

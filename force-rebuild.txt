@@ -1,0 +1,112 @@
+Write-Host === Force Complete Rebuild === -ForegroundColor Cyan
+Write-Host 
+
+Set-Location CWorkCodeAppLogger
+
+# Step 1 Clean everything
+Write-Host [17] Cleaning projects... -ForegroundColor Yellow
+dotnet clean
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .AppLoggerbin
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .AppLoggerobj
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .PackageTestbin
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .PackageTestobj
+
+# Step 2 Clear all NuGet caches
+Write-Host [27] Clearing NuGet caches... -ForegroundColor Yellow
+dotnet nuget locals all --clear
+
+# Step 3 Build AppLogger package
+Write-Host [37] Building AppLogger package... -ForegroundColor Yellow
+Set-Location .AppLogger
+dotnet pack -c Release -v normal
+if ($LASTEXITCODE -ne 0) { 
+    Write-Host ✗ Pack failed! -ForegroundColor Red
+    exit 1
+}
+
+# Step 4 Verify .targets file is in package
+Write-Host [47] Verifying package contents... -ForegroundColor Yellow
+$packagePath = .binReleaseAppLoggerT.1.0.2.nupkg
+if (Test-Path $packagePath) {
+    Write-Host ✓ Package created at $packagePath -ForegroundColor Green
+    
+    # Extract and check
+    $extractPath = .binReleasepackage_check
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $extractPath
+    New-Item -ItemType Directory -Path $extractPath  Out-Null
+    
+    Copy-Item $packagePath $extractPathpackage.zip
+    Expand-Archive -Path $extractPathpackage.zip -DestinationPath $extractPath -Force
+    
+    $targetsFile = $extractPathbuildAppLoggerT.targets
+    if (Test-Path $targetsFile) {
+        Write-Host ✓ .targets file found in package -ForegroundColor Green
+        
+        # Check if it has the CopyEtabsDllToOutput target
+        $content = Get-Content $targetsFile -Raw
+        if ($content -match CopyEtabsDllToOutput) {
+            Write-Host ✓ .targets contains CopyEtabsDllToOutput target -ForegroundColor Green
+        } else {
+            Write-Host ✗ .targets MISSING CopyEtabsDllToOutput target! -ForegroundColor Red
+            Write-Host   The package has the OLD .targets file! -ForegroundColor Red
+            exit 1
+        }
+    } else {
+        Write-Host ✗ .targets file NOT found in package! -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host ✗ Package not found! -ForegroundColor Red
+    exit 1
+}
+
+# Step 5 Update PackageTest
+Write-Host [57] Updating PackageTest... -ForegroundColor Yellow
+Set-Location ..PackageTest
+
+# Remove package reference
+dotnet remove package AppLoggerT
+
+# Add from local source
+dotnet add package AppLoggerT --version 1.0.2 --source ..AppLoggerbinRelease
+
+# Step 6 Build PackageTest with verbose output
+Write-Host [67] Building PackageTest... -ForegroundColor Yellow
+$buildOutput = dotnet build -v detailed 2&1  Out-String
+
+# Check for key messages
+if ($buildOutput -match [AppLoggerT] ETABS detected) {
+    Write-Host ✓ ETABS detected message found -ForegroundColor Green
+    $buildOutput -split `n  Where-Object { $_ -match [AppLoggerT] }  ForEach-Object {
+        Write-Host   $_ -ForegroundColor Gray
+    }
+} else {
+    Write-Host ✗ ETABS detection message NOT found -ForegroundColor Red
+}
+
+if ($buildOutput -match Copied ETABSv1.dll) {
+    Write-Host ✓ Copy message found -ForegroundColor Green
+} else {
+    Write-Host ✗ Copy message NOT found - DLL may not be copied -ForegroundColor Yellow
+}
+
+# Step 7 Verify DLL in output
+Write-Host [77] Verifying ETABSv1.dll in output... -ForegroundColor Yellow
+$dllPath = .binDebugnet10.0ETABSv1.dll
+if (Test-Path $dllPath) {
+    Write-Host ✓ ETABSv1.dll found in output! -ForegroundColor Green
+    $file = Get-Item $dllPath
+    Write-Host   Path $($file.FullName) -ForegroundColor Gray
+    Write-Host   Size $($file.Length) bytes -ForegroundColor Gray
+    Write-Host   Modified $($file.LastWriteTime) -ForegroundColor Gray
+} else {
+    Write-Host ✗ ETABSv1.dll NOT found in output! -ForegroundColor Red
+    Write-Host   Expected at $dllPath -ForegroundColor Red
+    Write-Host 
+    Write-Host Debugging info -ForegroundColor Yellow
+    Write-Host Files in output directory -ForegroundColor Yellow
+    Get-ChildItem .binDebugnet10.0  Select-Object Name, Length  Format-Table -AutoSize
+}
+
+Write-Host 
+Write-Host === Rebuild Complete === -ForegroundColor Cyan
